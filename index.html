@@ -910,7 +910,6 @@
         state = { ...state, ...JSON.parse(saved) };
       }
       // Populate inputs with saved state
-      el.walkWeightInput.value = state.userWeight;
       el.settingsGoalInput.value = state.targetCalories;
       el.reminderTimeInput.value = state.reminderTime;
       el.reminderToggle.checked = state.reminderEnabled;
@@ -1066,49 +1065,102 @@
         }
       });
 
-      // Walk calculator
-      const calcWalk = () => {
-        const weight = parseFloat(el.walkWeightInput.value);
-        const durationMin = parseFloat(el.walkDurationInput.value);
-        const met = parseFloat(el.walkPaceSelect.value);
-        
-        if (weight > 0 && durationMin > 0 && met > 0) {
-          state.userWeight = weight;
-          const durationHr = durationMin / 60;
-          const calories = Math.round(met * weight * durationHr);
-          
-          el.walkResult.textContent = calories;
-          el.walkResultContainer.style.display = 'block';
-          el.emptyWalks.style.display = 'none';
-        } else {
-          el.walkResultContainer.style.display = 'none';
-          el.emptyWalks.style.display = state.walks.length > 0 ? 'none' : 'block';
+      // Walk map logic
+      el.startWalkBtn.addEventListener('click', () => {
+        if (!("geolocation" in navigator)) {
+          showToast("Tarayıcınız GPS desteklemiyor.");
+          return;
         }
-      };
+        
+        el.walkMapContainer.style.display = 'block';
+        el.startWalkBtn.style.display = 'none';
+        el.stopWalkBtn.style.display = 'block';
+        
+        if (!walkMapObj) {
+          walkMapObj = L.map('walk-map').setView([41.0082, 28.9784], 15);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+          }).addTo(walkMapObj);
+          walkPolyline = L.polyline([], {color: 'var(--accent-color)', weight: 5}).addTo(walkMapObj);
+        }
+        setTimeout(() => walkMapObj.invalidateSize(), 100);
 
-      el.walkWeightInput.addEventListener('input', calcWalk);
-      el.walkDurationInput.addEventListener('input', calcWalk);
-      el.walkPaceSelect.addEventListener('change', calcWalk);
+        walkPoints = [];
+        totalDistanceKm = 0;
+        currentWalkCal = 0;
+        walkStartTime = new Date();
+        walkPolyline.setLatLngs([]);
+        
+        el.trackTime.textContent = "00:00";
+        el.trackDist.textContent = "0.00";
+        el.trackCal.textContent = "0";
 
-      // Save walk
-      el.saveWalkBtn.addEventListener('click', () => {
-        const burned = parseInt(el.walkResult.textContent, 10);
-        if (burned > 0) {
-          state.burnedCalories += burned;
+        trackInterval = setInterval(() => {
+          if (!walkStartTime) return;
+          const diffSecs = Math.floor((new Date() - walkStartTime) / 1000);
+          const mins = Math.floor(diffSecs / 60);
+          const secs = diffSecs % 60;
+          el.trackTime.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+          
+          const diffHours = diffSecs / 3600;
+          const speedKmh = diffHours > 0 ? (totalDistanceKm / diffHours) : 0;
+          
+          let met = 2.8;
+          if (speedKmh > 6) met = 4.3;
+          else if (speedKmh > 4) met = 3.5;
+          
+          currentWalkCal = Math.round(met * state.userWeight * diffHours);
+          el.trackCal.textContent = currentWalkCal;
+        }, 1000);
+
+        watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const newPoint = L.latLng(lat, lng);
+            
+            if (walkPoints.length > 0) {
+              const lastPoint = walkPoints[walkPoints.length - 1];
+              totalDistanceKm += (lastPoint.distanceTo(newPoint) / 1000);
+            }
+            
+            walkPoints.push(newPoint);
+            walkPolyline.addLatLng(newPoint);
+            walkMapObj.panTo(newPoint);
+            el.trackDist.textContent = totalDistanceKm.toFixed(2);
+          },
+          (err) => {
+            console.error(err);
+            showToast("Konum alınamadı. İzin verildiğine emin olun.");
+          },
+          { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+        );
+      });
+
+      el.stopWalkBtn.addEventListener('click', () => {
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        clearInterval(trackInterval);
+        
+        el.startWalkBtn.style.display = 'block';
+        el.stopWalkBtn.style.display = 'none';
+        el.walkMapContainer.style.display = 'none';
+        
+        if (currentWalkCal > 0) {
+          state.burnedCalories += currentWalkCal;
           state.walks = state.walks || [];
           state.walks.push({
             id: Date.now().toString(),
-            calories: burned,
+            calories: currentWalkCal,
+            distance: totalDistanceKm.toFixed(2),
             time: new Date().toISOString()
           });
           
           pulseRing();
           saveState();
-          showToast('Harika! Yürüyüş kaydedildi 💪');
+          showToast('Yürüyüş kaydedildi 💪');
           
-          // Reset calc
-          el.walkDurationInput.value = '';
-          el.walkResultContainer.style.display = 'none';
+          el.walkResult.textContent = currentWalkCal;
+          el.walkResultContainer.style.display = 'block';
           el.emptyWalks.style.display = 'none';
         }
       });
