@@ -3,35 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Antigravity</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <style>
+  <title>METRA</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
     :root {
-      --bg-color: #0D1B2A;
-      --accent-color: #00F5C3;
-      --text-color: #F8F9FA;
-      --text-muted: #A0AAB2;
-      --divider-color: #1B2A3D;
-      --error-color: #FF4D4D;
-      
       --font-heading: 'DM Sans', sans-serif;
       --font-body: 'Inter', sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
+    [data-theme="light"] {
+      --bg-color: #f4f6f8;
+      --surface-color: #ffffff;
+      --surface-border: #e2e8f0;
+      --accent-color: #00A98F;
+      --accent-glow: rgba(0, 169, 143, 0.2);
+      --text-color: #1e293b;
+      --text-muted: #64748b;
+      --error-color: #ef4444;
+      --gradient-bg: var(--bg-color);
+      --ring-bg: #e2e8f0;
+      --glass-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
+    [data-theme="dark"] {
+      --bg-color: #0f172a;
+      --surface-color: #1e293b;
+      --surface-border: #334155;
+      --accent-color: #00F5C3;
+      --accent-glow: rgba(0, 245, 195, 0.2);
+      --text-color: #f8fafc;
+      --text-muted: #94a3b8;
+      --error-color: #ef4444;
+      --gradient-bg: var(--bg-color);
+      --ring-bg: #334155;
+      --glass-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
     body {
-      background-color: var(--bg-color);
+      background: var(--gradient-bg);
       color: var(--text-color);
+      transition: background 0.3s, color 0.3s;
       font-family: var(--font-body);
       line-height: 1.5;
       min-height: 100vh;
@@ -39,839 +53,751 @@
       flex-direction: column;
     }
 
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation: none !important;
-        transition: none !important;
-      }
+    h1, h2, h3 { font-family: var(--font-heading); font-weight: 700; }
+
+    .glass-card {
+      background: var(--surface-color);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--surface-border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      margin-bottom: 24px;
     }
 
-    h1, h2, h3, h4, h5, h6 {
-      font-family: var(--font-heading);
-      font-weight: 700;
-    }
-
-    /* Header */
     header {
       padding: 24px 20px 16px;
       text-align: center;
-      border-bottom: 2px solid var(--divider-color);
     }
 
     header h1 {
-      font-size: 1.5rem;
+      font-size: 1.8rem;
       letter-spacing: -0.5px;
-      color: var(--accent-color);
+      color: var(--text-color);
+      text-shadow: 0 0 10px var(--accent-glow);
     }
 
-    header p {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Main Container */
     main {
       flex: 1;
-      padding: 24px 20px 100px; /* Extra padding for bottom nav */
+      padding: 4px 16px 40px;
       overflow-y: auto;
-      position: relative;
     }
 
-    /* Tabs Container */
-    .tab-content {
-      display: none;
-      animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
+    /* Switch Toggle */
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--surface-border); transition: .4s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    input:checked + .slider { background-color: #0ea5e9; }
+    input:checked + .slider:before { transform: translateX(20px); }
 
-    .tab-content.active {
-      display: block;
-    }
+    .tab-content { display: none; animation: fadeSlideUp 0.4s ease forwards; }
+    .tab-content.active { display: block; }
 
     @keyframes fadeSlideUp {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Ring Component */
-    .ring-container {
-      position: relative;
-      width: 240px;
-      height: 240px;
-      margin: 0 auto 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-    }
+    .section-title { font-size: 1.2rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .info-text { font-size: 0.875rem; color: var(--text-muted); }
 
-    .progress-ring {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-    }
-
-    .progress-ring__circle-bg {
-      fill: none;
-      stroke: var(--divider-color);
-      stroke-width: 16;
-    }
-
-    .progress-ring__circle {
+    /* Calorie Ring */
+    .ring-container { position: relative; width: 220px; height: 220px; margin: 0 auto 16px; }
+    .ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .calories-info { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .ring-bg { fill: none; stroke: var(--ring-bg); stroke-width: 16; }
+    .ring-progress {
       fill: none;
       stroke: var(--accent-color);
       stroke-width: 16;
       stroke-linecap: round;
-      transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+      filter: drop-shadow(0 0 6px var(--accent-glow));
     }
-
-    .ring-pulse {
-      animation: pulseRing 1s ease-out;
+    .ring-burned {
+      fill: none;
+      stroke: #FF9800; /* Orange for burned */
+      stroke-width: 16;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+      filter: drop-shadow(0 0 6px rgba(255, 152, 0, 0.4));
     }
-
-    @keyframes pulseRing {
-      0% { filter: drop-shadow(0 0 0px var(--accent-color)); }
-      50% { filter: drop-shadow(0 0 15px var(--accent-color)); }
-      100% { filter: drop-shadow(0 0 0px var(--accent-color)); }
-    }
-
     .ring-inner {
-      text-align: center;
-      z-index: 1;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
+    .ring-inner .consumed { font-family: var(--font-heading); font-size: 3rem; font-weight: 700; line-height: 1; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+    .ring-inner .label { font-size: 0.875rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
 
-    .ring-inner .consumed {
-      font-family: var(--font-heading);
-      font-size: 3rem;
-      font-weight: 700;
-      line-height: 1;
-    }
+    .stats-row { display: flex; justify-content: space-between; text-align: center; margin-bottom: 16px; }
+    .stat-item .value { font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; }
+    .stat-item .label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
-    .ring-inner .label {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .stats-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 32px;
-      padding-top: 24px;
-      border-top: 2px solid var(--divider-color);
-    }
-
-    .stat-item {
-      text-align: center;
-      flex: 1;
-    }
-
-    .stat-item .value {
-      font-family: var(--font-heading);
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-
-    .stat-item .label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Forms & Inputs */
-    .input-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.875rem;
-      font-weight: 500;
-      margin-bottom: 8px;
-      color: var(--text-muted);
-    }
-
-    input[type="text"],
-    input[type="number"],
-    input[type="time"],
-    select {
+    /* Form Elements */
+    .input-group { margin-bottom: 16px; }
+    label { display: block; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 6px; }
+    input, select {
       width: 100%;
-      background: transparent;
-      border: 2px solid var(--divider-color);
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--surface-border);
       color: var(--text-color);
+      padding: 12px 16px;
+      border-radius: 12px;
       font-family: var(--font-body);
       font-size: 1rem;
-      padding: 14px 16px;
-      border-radius: 12px;
-      outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-
-    /* Webkit adjustments for dark appearance in selects/date/time if supported */
-    ::-webkit-calendar-picker-indicator {
-        filter: invert(1);
-    }
-
-    input:focus,
-    select:focus {
-      border-color: var(--accent-color);
-    }
-
+    input:focus, select:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-glow); }
+    
     button {
       width: 100%;
-      background-color: var(--accent-color);
-      color: var(--bg-color);
+      background: var(--accent-color);
+      color: #000;
       border: none;
-      padding: 16px;
-      font-family: var(--font-body);
-      font-size: 1rem;
-      font-weight: 600;
+      padding: 14px;
       border-radius: 12px;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1rem;
       cursor: pointer;
-      transition: transform 0.1s, opacity 0.2s;
+      transition: transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px var(--accent-glow);
     }
-
-    button:active {
-      transform: scale(0.98);
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+    button:active { transform: scale(0.98); }
+    button.secondary-btn { background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); box-shadow: none; }
+    button.danger-btn { background: var(--error-color); color: #fff; box-shadow: 0 4px 15px rgba(255,77,77,0.3); }
 
     /* Lists */
-    .section-title {
-      font-size: 1.125rem;
-      margin-bottom: 16px;
-      color: var(--text-color);
-    }
-
-    .meal-list {
-      list-style: none;
-    }
-
+    .meal-list { list-style: none; }
     .meal-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--divider-color);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0; border-bottom: 1px solid var(--surface-border);
     }
-
-    .meal-item:last-child {
-      border-bottom: none;
-    }
-
-    .meal-info .meal-name {
-      font-weight: 500;
-    }
-
-    .meal-info .meal-cal {
-      color: var(--accent-color);
-      font-weight: 600;
-      font-family: var(--font-heading);
-    }
-
+    .meal-item:last-child { border-bottom: none; }
+    .meal-name { font-weight: 500; font-size: 1rem; }
+    .meal-cal { font-family: var(--font-heading); color: var(--accent-color); font-weight: 700; }
     .delete-btn {
-      background: transparent;
-      color: var(--text-muted);
-      width: auto;
-      padding: 8px;
-      font-size: 1.5rem;
-      line-height: 1;
-    }
-    
-    .delete-btn:hover {
-      color: var(--error-color);
+      background: transparent; border: none; color: var(--text-muted);
+      width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem;
+      padding: 0; box-shadow: none; display: flex; align-items: center; justify-content: center;
     }
 
-    .empty-state {
-      text-align: center;
-      padding: 32px 0;
-      color: var(--text-muted);
-      font-size: 0.875rem;
-    }
+    .empty-state { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 20px; }
 
-    /* Bottom Navigation */
+    /* Bottom Nav */
     nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background-color: var(--bg-color);
-      border-top: 2px solid var(--divider-color);
-      display: flex;
-      padding: 8px 16px 24px;
-      z-index: 10;
-    }
-
-    .nav-item {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      text-decoration: none;
-      padding: 8px;
-      background: transparent;
-      border-radius: 8px;
-    }
-
-    .nav-item.active {
-      color: var(--accent-color);
-    }
-
-    .nav-item svg {
-      width: 24px;
-      height: 24px;
-      margin-bottom: 4px;
-      fill: currentColor;
-    }
-
-    .nav-item span {
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-
-    /* Notification Toggle */
-    .toggle-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--divider-color);
-      margin-bottom: 24px;
-    }
-
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 52px;
-      height: 32px;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: var(--divider-color);
-      transition: .4s;
-      border-radius: 34px;
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 24px;
-      width: 24px;
-      left: 4px;
-      bottom: 4px;
-      background-color: var(--text-color);
-      transition: .4s;
-      border-radius: 50%;
-    }
-
-    input:checked + .slider {
-      background-color: var(--accent-color);
-    }
-
-    input:checked + .slider:before {
-      transform: translateX(20px);
-      background-color: var(--bg-color);
-    }
-
-    /* Walk Calculator Result */
-    #walk-result-container {
-      text-align: center;
-      margin: 32px 0;
-      display: none;
-    }
-    
-    #walk-result {
-      font-family: var(--font-heading);
-      font-size: 3rem;
-      color: var(--accent-color);
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .toast {
-      position: fixed;
-      top: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(-20px);
-      background-color: var(--accent-color);
-      color: var(--bg-color);
-      padding: 12px 24px;
-      border-radius: 24px;
-      font-weight: 600;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s, transform 0.3s;
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--surface-border);
+      display: flex; padding-bottom: env(safe-area-inset-bottom);
       z-index: 100;
     }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 12px 0; background: none; border: none; box-shadow: none;
+      color: var(--text-muted); gap: 4px; border-radius: 0;
+    }
+    .nav-item svg { width: 24px; height: 24px; fill: currentColor; transition: transform 0.2s; }
+    .nav-item span { font-size: 0.7rem; font-weight: 500; }
+    .nav-item.active { color: var(--accent-color); }
+    .nav-item.active svg { transform: translateY(-2px); filter: drop-shadow(0 0 5px var(--accent-glow)); }
 
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
+    /* Map & Tracker */
+    #walk-map { height: 250px; width: 100%; border-radius: 16px; margin-bottom: 20px; z-index: 1; border: 1px solid var(--surface-border); }
+    .activity-selector { display: flex; gap: 8px; margin-bottom: 16px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 12px; }
+    .act-btn {
+      flex: 1; background: transparent; color: var(--text-muted); box-shadow: none;
+      padding: 8px; font-size: 0.875rem; border-radius: 8px; font-family: var(--font-body); font-weight: 500;
     }
-    
-    .info-text {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      margin-top: 12px;
-    }
-    
-    .setting-group {
-      margin-bottom: 24px;
-    }
+    .act-btn.active { background: var(--surface-color); color: var(--accent-color); border: 1px solid var(--surface-border); }
 
-    /* Map & Onboarding Styles */
-    #walk-map {
-      height: 300px;
-      width: 100%;
-      border-radius: 16px;
-      margin-bottom: 24px;
-      z-index: 1;
-      border: 2px solid var(--divider-color);
+    /* Overlays */
+    .overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--bg-color);
+      z-index: 1000; display: flex; flex-direction: column; padding: 24px; overflow-y: auto;
     }
+    .overlay.hidden { display: none; }
+    .overlay-title { font-size: 2rem; color: var(--text-color); margin-bottom: 8px; text-shadow: 0 0 10px var(--accent-glow); }
+
+    /* Share Card */
+    #share-card { background: var(--surface-color); border-radius: 20px; padding: 20px; text-align: center; border: 1px solid var(--accent-glow); }
+    #share-card h2 { font-size: 2.5rem; color: var(--accent-color); margin: 10px 0; }
+    #share-card .stats { display: flex; justify-content: space-around; margin-top: 20px; border-top: 1px solid var(--surface-border); padding-top: 16px; }
     
-    .onboarding-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: var(--accent-color); color: #000; padding: 12px 24px; border-radius: 24px;
+      font-weight: 600; font-size: 0.9rem; z-index: 2000; opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-glow); }
+    input:checked + .slider:before { transform: translateX(22px); }
+    .toggle-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  
+    /* Meal Categories */
+    .meal-category-card { padding: 12px 16px; margin-bottom: 12px; }
+    .meal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--surface-border); padding-bottom: 6px; }
+    .meal-header .section-title { font-size: 1.05rem; }
+    .meal-header-right { display: flex; align-items: center; gap: 10px; }
+    .category-cal { font-family: var(--font-heading); font-weight: 700; color: var(--accent-color); font-size: 1rem; }
+    .add-meal-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+
+  
+    /* Theme & Dropdown additions */
+    .theme-toggle { position: absolute; right: 20px; top: 24px; background: none; border: none; font-size: 1.5rem; cursor: pointer; box-shadow: none; width: auto; padding: 0; }
+    
+    .custom-dropdown {
+      position: absolute; width: 100%; background: var(--bg-color); border: 1px solid var(--surface-border); border-radius: 12px;
+      max-height: 250px; overflow-y: auto; z-index: 2000; box-shadow: 0 8px 32px rgba(0,0,0,0.3); display: none; margin-top: 4px; left: 0;
+    }
+    .dropdown-group-title { font-size: 0.8rem; font-weight: 700; color: var(--accent-color); padding: 8px 12px; background: var(--surface-color); border-bottom: 1px solid var(--surface-border); }
+    .dropdown-item { padding: 10px 12px; font-size: 0.95rem; cursor: pointer; border-bottom: 1px solid var(--surface-border); transition: background 0.2s; }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: var(--surface-border); }
+
+    .meal-list { list-style: none; max-height: 180px; overflow-y: auto; padding-right: 4px; }
+    .meal-list::-webkit-scrollbar { width: 4px; }
+    .meal-list::-webkit-scrollbar-thumb { background: var(--surface-border); border-radius: 4px; }
+
+    /* V7 Dashboard Additions */
+    .dashboard-container { padding-bottom: 40px; }
+    .meal-dash-btn { 
       background-color: var(--bg-color);
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      padding: 24px;
-      overflow-y: auto;
+      border: 1px solid var(--surface-border);
+      border-radius: 16px; padding: 12px 16px; color: var(--text-color); font-family: var(--font-body); font-weight: 600; font-size: 0.95rem;
+      cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03); position: relative; margin-bottom: 8px; overflow: hidden;
+      min-height: 48px;
     }
     
-    .onboarding-overlay.hidden {
-      display: none;
+    .meal-dash-btn span { position: relative; z-index: 2; transition: color 0.4s; }
+    
+    .meal-dash-btn::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background-size: cover; background-position: center;
+      opacity: 0; transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s ease-out;
+      transform: scale(1.1); z-index: 0;
+    }
+    .meal-dash-btn::after {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(to right, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%);
+      opacity: 0; transition: opacity 0.4s ease; z-index: 1;
     }
     
-    .onboarding-title {
-      font-size: 2rem;
-      color: var(--accent-color);
-      margin-bottom: 8px;
+    .meal-dash-btn[data-category="breakfast"]::before { background-image: url('breakfast_bg.png'); }
+    .meal-dash-btn[data-category="lunch"]::before { background-image: url('lunch_bg.png'); }
+    .meal-dash-btn[data-category="dinner"]::before { background-image: url('dinner_bg.png'); }
+    .meal-dash-btn[data-category="snack"]::before { background-image: url('snack_bg.png'); }
+    
+    .meal-dash-btn:hover { 
+      padding: 32px 20px; color: #ffffff; 
+      border-color: var(--accent-color); box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     }
-
-    .tracking-stats {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 16px;
-      margin-bottom: 24px;
-      text-align: center;
-    }
-
-    .tracking-stats .stat-item {
-      flex: 1;
-    }
-
-    .tracking-stats .value {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--accent-color);
-    }
-  </style>
+    .meal-dash-btn:hover span { color: #ffffff; }
+    .meal-dash-btn:hover::before { opacity: 1; transform: scale(1); }
+    .meal-dash-btn:hover::after { opacity: 1; }
+    
+    .meal-dash-cal { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; background: var(--surface-color); padding: 4px 10px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: all 0.4s; }
+    .meal-dash-btn:hover .meal-dash-cal { color: #111; background: #ffffff; text-shadow: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transform: scale(1.05); }
+    
+    #map { transition: height 0.3s ease; }
+    
+    .manager-cal-total { font-size: 2rem; font-family: var(--font-heading); font-weight: 800; color: var(--accent-color); text-align: center; margin-bottom: 24px; }
+</style>
 </head>
-<body>
-
-  <header>
-    <h1>Antigravity</h1>
-    <p>Hafif hareket et. Güçlü yaşa.</p>
+<body data-theme="light">
+  <header style="position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; min-height: 48px; padding: 12px 0 0 0;">
+    <button id="profile-modal-btn" class="theme-toggle" style="position: absolute; left: 16px; color: var(--text-color); cursor: pointer; background: transparent; border: none; padding: 0;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    </button>
+    <div style="text-align: center; z-index: 1;">
+      <h1 style="font-size: 1.6rem; letter-spacing: 4px; font-weight: 800; background: linear-gradient(90deg, var(--text-color), var(--accent-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">METRA</h1>
+    </div>
+    <button id="theme-toggle-btn" class="theme-toggle" style="position: absolute; right: 16px; color: var(--text-color);">
+      <div id="theme-icon-container"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></div>
+    </button>
   </header>
 
-  <main>
-    <!-- Tab 1: Bugün (Home) -->
-    <section id="tab-home" class="tab-content active">
-      <div class="ring-container">
-        <svg class="progress-ring" viewBox="0 0 240 240">
-          <circle class="progress-ring__circle-bg" cx="120" cy="120" r="104"></circle>
-          <circle id="calorie-ring" class="progress-ring__circle" cx="120" cy="120" r="104"></circle>
-        </svg>
-        <div class="ring-inner">
-          <div class="consumed" id="calories-consumed-main">0</div>
-          <div class="label">Kcal Tüketildi</div>
+  <main class="dashboard-container">
+    <!-- Top Section: Ring + Meals -->
+    <div class="glass-card" style="display: flex; gap: 16px; align-items: center; padding: 16px 12px;">
+      <!-- Left: Ring -->
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div class="ring-container" style="position: relative; margin: 0; width: 100%; max-width: 150px; aspect-ratio: 1/1; display: block;">
+          <svg class="ring-svg" viewBox="0 0 220 220" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg);">
+            <circle class="ring-bg" cx="110" cy="110" r="96"></circle>
+            <circle class="ring-burned" id="calorie-ring-burned" cx="110" cy="110" r="96"></circle>
+            <circle class="ring-progress" id="calorie-ring" cx="110" cy="110" r="96"></circle>
+          </svg>
+          <div class="calories-info" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="main-cal" style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700; color: var(--text-color); line-height: 1;">
+              <span id="calories-consumed-main">0</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; font-weight: 600;">kcal</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted); opacity: 0.8; margin-top: 4px;">Hedef: <span id="calories-goal">2000</span></div>
+          </div>
         </div>
+        <div style="font-size: 0.85rem; color: #f59e0b; font-weight: 600; margin-top: 8px;">🔥 <span id="ring-burned-cal-display">0</span> kcal yakıldı</div>
+        <p id="goal-exceeded-msg" class="info-text" style="color: var(--error-color); text-align: center; display: none; margin-top: 8px; font-size: 0.85rem;">Hedef aşıldı!</p>
       </div>
 
-      <div class="stats-row">
-        <div class="stat-item">
-          <div class="value" id="calories-goal">2000</div>
-          <div class="label">Hedef</div>
+      <!-- Right: Meal Stack -->
+      <div style="flex: 1.2; display: flex; flex-direction: column;">
+        <button class="meal-dash-btn" data-category="breakfast">
+          <span>Kahvaltı</span> <span id="cal-breakfast" class="meal-dash-cal">0</span>
+        </button>
+        <button class="meal-dash-btn" data-category="lunch">
+          <span>Öğle</span> <span id="cal-lunch" class="meal-dash-cal">0</span>
+        </button>
+        <button class="meal-dash-btn" data-category="dinner">
+          <span>Akşam</span> <span id="cal-dinner" class="meal-dash-cal">0</span>
+        </button>
+        <button class="meal-dash-btn" data-category="snack">
+          <span>Diğer :)</span> <span id="cal-snack" class="meal-dash-cal">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Middle Section: Exercise & GPS -->
+    <div class="glass-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+      <div style="padding: 12px 16px; background: var(--surface-color); border-bottom: 1px solid var(--surface-border); display: flex; justify-content: space-between; align-items: center; z-index: 10;">
+        <h2 class="section-title" style="margin: 0; font-size: 1.1rem; gap: 6px;">Egzersiz</h2>
+        <select id="activity-type" style="padding: 4px 10px; border-radius: 20px; border: 1px solid var(--surface-border); background: var(--bg-color); color: var(--accent-color); font-family: var(--font-body); font-weight: 600; font-size: 0.85rem; outline: none; -webkit-appearance: none; cursor: pointer;">
+          <option value="walk">Yürüyüş</option>
+          <option value="run">Koşu</option>
+          <option value="bike">Bisiklet</option>
+        </select>
+      </div>
+      
+      <div style="position: relative; width: 100%; height: 220px;">
+        <div id="map" style="width: 100%; height: 100%; background: #111; z-index: 1;"></div>
+        
+        <div id="gps-overlay-start" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; width: 80%;">
+          <button type="button" id="start-walk-btn" style="box-shadow: 0 8px 24px rgba(0,0,0,0.4); font-size: 1.1rem; letter-spacing: 1px;">📡 BAŞLA</button>
         </div>
-        <div class="stat-item">
-          <div class="value" id="calories-burned" style="color: var(--accent-color)">0</div>
-          <div class="label">Yakılan</div>
+        
+        <div id="gps-overlay-stats" style="position: absolute; top: 0; left: 0; width: 100%; padding: 12px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); z-index: 10; display: none;">
+          <div class="stats-row" id="live-walk-stats" style="margin-bottom: 0;">
+            <div class="stat-item">
+              <div class="value" id="live-distance" style="color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">0.00</div>
+              <div class="label" style="color: rgba(255,255,255,0.8);">Mesafe (km)</div>
+            </div>
+            <div class="stat-item">
+              <div class="value" id="live-cal" style="color: var(--accent-color); text-shadow: 0 2px 4px rgba(0,0,0,0.5);">0</div>
+              <div class="label" style="color: rgba(255,255,255,0.8);">Yakılan</div>
+            </div>
+          </div>
         </div>
-        <div class="stat-item">
-          <div class="value" id="calories-remaining">2000</div>
-          <div class="label">Kalan</div>
+        
+        <div id="gps-overlay-stop" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; width: 80%; display: none;">
+          <button type="button" id="stop-walk-btn" class="danger-btn" style="box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4); font-size: 1.1rem; letter-spacing: 1px;">Egzersizi Bitir</button>
         </div>
       </div>
+    </div>
 
-      <p id="goal-exceeded-msg" class="info-text" style="color: var(--error-color); text-align: center; display: none; margin-bottom: 24px;">
-        Günlük hedefini aştın! Yarın daha dengeli olabilirsin.
-      </p>
+    <!-- Bottom Section: Alarm & Calendar -->
+    <div class="glass-card">
+      <h2 class="section-title">Spor Hatırlatıcı Alarm</h2>
+      <div class="info-text" style="margin-bottom: 16px;">Her gün antrenman veya su içme vakti geldiğinde telefonunun çalması için takvime ekle.</div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <input type="time" id="reminder-time" value="18:30" style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--surface-border); background: var(--bg-color); color: var(--text-color);">
+        <button id="add-to-calendar-btn" class="primary-btn" style="flex: 2; margin: 0; display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          Takvime Ekle
+        </button>
+      </div>
+    </div>
+  </main>
 
+  <!-- Meal Manager Modal -->
+  <div id="meal-manager-modal" class="overlay hidden" style="justify-content: flex-end; padding: 0; background: rgba(0,0,0,0.6);">
+    <div class="glass-card" style="margin-bottom: 0; border-radius: 24px 24px 0 0; padding-bottom: 40px; animation: fadeSlideUp 0.3s ease; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 class="section-title" id="manager-title" style="color: var(--accent-color); margin-bottom: 0;">Öğün</h2>
+        <button type="button" id="close-manager-modal" style="background: none; border: none; color: var(--text-color); font-size: 2rem; cursor: pointer; width: auto; padding: 0 8px; box-shadow: none; margin: 0; line-height: 1;">&times;</button>
+      </div>
+      <div id="manager-cal-total" class="manager-cal-total">0 kcal</div>
+      
+      <ul id="manager-list" class="meal-list" style="margin-bottom: 24px;"></ul>
+      
       <form id="add-meal-form">
-        <h2 class="section-title">Öğün Ekle</h2>
-        <div class="input-group">
+        <h3 style="margin-bottom: 12px; font-family: var(--font-heading); font-size: 1rem;">Yeni Yemek Ekle</h3>
+        <div class="input-group" style="position: relative;">
           <label for="meal-name">Yemek Ara veya Yaz</label>
-          <input type="text" id="meal-name" list="food-db" placeholder="Örn: Yulaf ezmesi, Yumurta..." required autocomplete="off">
-          <datalist id="food-db"></datalist>
+          <input type="text" id="meal-name" placeholder="Örn: Yulaf ezmesi..." required autocomplete="off">
+          <div id="custom-dropdown" class="custom-dropdown"></div>
         </div>
-        <div style="display: flex; gap: 16px;">
+        <div style="display: flex; gap: 12px;">
           <div class="input-group" style="flex: 1.5;">
             <label for="meal-amount">Miktar / Birim</label>
             <div style="display: flex; gap: 8px;">
-              <input type="number" id="meal-amount" placeholder="100" min="1" style="flex: 1;">
-              <select id="meal-unit" style="flex: 1.5; padding-left: 8px; padding-right: 8px; font-size: 0.875rem;">
+              <input type="number" id="meal-amount" placeholder="Örn: 1 veya 0.5" min="0.1" step="0.1" style="flex: 1;">
+              <select id="meal-unit" style="flex: 1.5; padding: 0 4px; font-size: 0.8rem;">
                 <option value="1">Gram / ml</option>
                 <option value="200">Su Bardağı</option>
                 <option value="100">Çay Bardağı</option>
                 <option value="150">Porsiyon</option>
+                <option value="1">Adet</option>
+                <option value="1">Dilim</option>
               </select>
             </div>
           </div>
           <div class="input-group" style="flex: 1;">
             <label for="meal-calories">Kalori (kcal)</label>
-            <input type="number" id="meal-calories" placeholder="Örn: 350" required min="1">
+            <input type="number" id="meal-calories" placeholder="350" required min="1">
           </div>
         </div>
-        <div class="info-text" id="meal-calc-info" style="margin-top: -12px; margin-bottom: 20px; display: none;">
-          100 gramı <span id="unit-cal-display" style="color: var(--accent-color); font-weight: 600;">0</span> kcal.
+        <div class="info-text" id="meal-calc-info" style="margin-top: -8px; margin-bottom: 16px; display: none;">
+          <span id="unit-cal-display" style="color: var(--accent-color); font-weight: 600;">0</span> kcal.
         </div>
-        <button type="submit">Öğün Ekle</button>
+        <button type="submit" style="margin-bottom: 12px;">Ekle</button>
       </form>
-
-      <h2 class="section-title" style="margin-top: 32px;">Bugün Tüketilenler</h2>
-      <div id="empty-meals" class="empty-state">
-        Henüz öğün eklemedin — ilk öğününü ekle!
-      </div>
-      <ul id="meal-list" class="meal-list">
-        <!-- Meals will be injected here -->
-      </ul>
-    </section>
-
-    <!-- Tab 2: Yürüyüş (Walk) -->
-    <section id="tab-walk" class="tab-content">
-      <h2 class="section-title">Canlı Yürüyüş Takibi</h2>
-      <p class="info-text" style="margin-bottom: 24px;">GPS ile yürüdüğün mesafeyi takip et ve yaktığın kaloriyi net hedefine ekle.</p>
-      
-      <div id="walk-map-container" style="display: none;">
-        <div id="walk-map"></div>
-        <div id="tracking-ui">
-          <div class="tracking-stats">
-            <div class="stat-item">
-              <div class="value" id="track-time">00:00</div>
-              <div class="label">Süre</div>
-            </div>
-            <div class="stat-item">
-              <div class="value" id="track-dist">0.00</div>
-              <div class="label">Mesafe (km)</div>
-            </div>
-            <div class="stat-item">
-              <div class="value" id="track-cal">0</div>
-              <div class="label">Kcal</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <button type="button" id="start-walk-btn">Yürüyüşe Başla (GPS)</button>
-      <button type="button" id="stop-walk-btn" style="display: none; background-color: var(--error-color); margin-top: 16px;">Yürüyüşü Bitir ve Kaydet</button>
-      
-      <div id="walk-result-container" style="display: none;">
-        <div id="walk-result">0</div>
-        <div class="info-text">Son Yürüyüşten Yakılan</div>
-      </div>
-      <div id="empty-walks" class="empty-state" style="margin-top: 24px;">
-        Yürüyüş kaydın yok, hadi başla!
-      </div>
-    </section>
-
-    <!-- Tab 3: Hatırlatıcı (Reminder) -->
-    <section id="tab-reminder" class="tab-content">
-      <h2 class="section-title">Yürüyüş Hatırlatıcı</h2>
-      
-      <div class="toggle-container">
-        <div>
-          <label style="margin: 0; color: var(--text-color); font-size: 1rem;">Hatırlatıcılar</label>
-          <div class="info-text" style="margin-top: 4px;">Günlük bildirim al</div>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="reminder-toggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div id="reminder-settings" style="opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
-        <div class="input-group">
-          <label for="reminder-time">Hatırlatma Saati</label>
-          <input type="time" id="reminder-time" value="18:30">
-        </div>
-        <button type="button" id="save-reminder-btn">Ayarı Kaydet</button>
-        <p id="reminder-status" class="info-text" style="margin-top: 16px; text-align: center; color: var(--accent-color); font-weight: 500;"></p>
-      </div>
-
-      <p id="notification-warning" class="info-text" style="color: var(--error-color); margin-top: 24px; text-align: center; display: none;">
-        Hatırlatıcı alabilmek için tarayıcı bildirimlerine izin verin.
-      </p>
-
-      <div class="setting-group" style="margin-top: 48px; border-top: 2px solid var(--divider-color); padding-top: 24px;">
-        <h2 class="section-title">Ayarlar</h2>
-        <div class="input-group">
-          <label for="settings-goal">Günlük Kalori Hedefi</label>
-          <input type="number" id="settings-goal" placeholder="2000" min="500">
-        </div>
-        <button type="button" id="save-settings-btn" style="background: transparent; border: 2px solid var(--accent-color); color: var(--accent-color);">Güncelle</button>
-      </div>
-    </section>
-  </main>
-
-  <nav>
-    <button class="nav-item active" data-tab="tab-home">
-      <svg viewBox="0 0 24 24">
-        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-      </svg>
-      <span>Bugün</span>
-    </button>
-    <button class="nav-item" data-tab="tab-walk">
-      <svg viewBox="0 0 24 24">
-        <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/>
-      </svg>
-      <span>Yürüyüş</span>
-    </button>
-    <button class="nav-item" data-tab="tab-reminder">
-      <svg viewBox="0 0 24 24">
-        <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
-      </svg>
-      <span>Hatırlatıcı</span>
-    </button>
-  </nav>
-
-  <div id="toast" class="toast"></div>
-
-  <div id="onboarding" class="onboarding-overlay hidden">
-    <h1 class="onboarding-title">Antigravity'ye Hoş Geldin</h1>
-    <p class="info-text" style="margin-bottom: 32px;">Sana özel günlük kalori hedefini hesaplayabilmemiz için birkaç bilgiye ihtiyacımız var.</p>
-    
-    <form id="onboarding-form">
-      <div class="input-group">
-        <label for="ob-gender">Cinsiyet</label>
-        <select id="ob-gender" required>
-          <option value="male">Erkek</option>
-          <option value="female">Kadın</option>
-        </select>
-      </div>
-      <div class="input-group">
-        <label for="ob-age">Yaş</label>
-        <input type="number" id="ob-age" placeholder="Örn: 25" required min="10" max="120">
-      </div>
-      <div class="input-group">
-        <label for="ob-weight">Kilo (kg)</label>
-        <input type="number" id="ob-weight" placeholder="Örn: 70" required min="30" max="250">
-      </div>
-      <div class="input-group">
-        <label for="ob-height">Boy (cm)</label>
-        <input type="number" id="ob-height" placeholder="Örn: 175" required min="100" max="250">
-      </div>
-      <div class="input-group">
-        <label for="ob-activity">Hareketlilik Seviyesi</label>
-        <select id="ob-activity" required>
-          <option value="1.2">Masa başı (Hareketsiz)</option>
-          <option value="1.375">Az hareketli (Haftada 1-3 gün spor)</option>
-          <option value="1.55" selected>Orta (Haftada 3-5 gün spor)</option>
-          <option value="1.725">Çok hareketli (Haftada 6-7 gün spor)</option>
-        </select>
-      </div>
-      <button type="submit" style="margin-top: 16px;">Profilimi Oluştur</button>
-    </form>
+    </div>
   </div>
 
+  <!-- Profile Settings Modal -->
+  <div id="profile-modal" class="overlay hidden" style="background: rgba(0,0,0,0.6);">
+    <div class="glass-card" style="width: 100%; max-width: 400px; animation: fadeSlideUp 0.3s ease;">
+      <h2 class="section-title">Profili Düzenle</h2>
+      <div class="input-group">
+        <label for="settings-goal">Günlük Kalori Hedefi</label>
+        <input type="number" id="settings-goal" placeholder="Örn: 2000" min="500">
+      </div>
+      <button type="button" id="save-settings-btn" style="margin-bottom: 12px;">Kaydet</button>
+      <button type="button" id="close-profile-modal" class="secondary-btn">Kapat</button>
+      <button type="button" id="clear-data-btn" class="danger-btn" style="margin-top: 24px;">Tüm Verileri Sil (Sıfırla)</button>
+    </div>
+  </div>
+
+  <!-- Onboarding Modal (Preserved) -->
+  <div id="onboarding" class="overlay hidden">
+    <div class="glass-card" style="width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto;">
+      <h2 class="section-title" style="color: var(--accent-color); font-size: 1.8rem; text-align: center;">Hoş Geldin!</h2>
+      <p style="text-align: center; margin-bottom: 24px; color: var(--text-muted);">Seni daha iyi tanıyıp sana özel hedefler belirleyelim.</p>
+      
+      <form id="onboarding-form">
+        <div class="input-group">
+          <label>Cinsiyet</label>
+          <select id="ob-gender" required>
+            <option value="male">Erkek</option>
+            <option value="female">Kadın</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <div class="input-group" style="flex: 1;">
+            <label>Yaş</label>
+            <input type="number" id="ob-age" min="10" max="100" required>
+          </div>
+          <div class="input-group" style="flex: 1;">
+            <label>Boy (cm)</label>
+            <input type="number" id="ob-height" min="100" max="250" required>
+          </div>
+          <div class="input-group" style="flex: 1;">
+            <label>Kilo (kg)</label>
+            <input type="number" id="ob-weight" min="30" max="300" required>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Hareket Seviyesi</label>
+          <select id="ob-activity" required>
+            <option value="1.2">Masa başı (Sedanter)</option>
+            <option value="1.375">Hafif hareketli (Haftada 1-3 gün spor)</option>
+            <option value="1.55">Orta hareketli (Haftada 3-5 gün spor)</option>
+            <option value="1.725">Çok hareketli (Haftada 6-7 gün spor)</option>
+            <option value="1.9">Aşırı hareketli (Ağır idman/sporcu)</option>
+          </select>
+        </div>
+        <button type="submit" style="margin-top: 16px;">Profili Oluştur</button>
+        <button type="button" id="ob-cancel-btn" class="secondary-btn" style="display: none; margin-top: 8px;">İptal</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Activity Summary Modal (Preserved) -->
+  <div id="activity-summary-modal" class="overlay hidden" style="justify-content: center; align-items: center; padding: 20px;">
+    <div class="glass-card" id="summary-card" style="width: 100%; max-width: 350px; text-align: center; border: 1px solid var(--accent-color);">
+      <h2 class="section-title" id="summary-title" style="color: var(--accent-color);">Egzersiz Özeti</h2>
+      <div style="font-size: 3rem; margin: 20px 0;">🏃‍♂️</div>
+      <div style="display: flex; justify-content: space-around; margin-bottom: 24px;">
+        <div>
+          <div id="summary-distance" style="font-size: 1.5rem; font-weight: bold;">0.00</div>
+          <div style="color: var(--text-muted); font-size: 0.9rem;">Mesafe (km)</div>
+        </div>
+        <div>
+          <div id="summary-cal" style="font-size: 1.5rem; font-weight: bold; color: var(--accent-color);">0</div>
+          <div style="color: var(--text-muted); font-size: 0.9rem;">Yakılan (kcal)</div>
+        </div>
+      </div>
+      <button type="button" id="share-summary-btn" style="margin-bottom: 12px; background: #fff; color: #000;">📸 Resmi Paylaş</button>
+      <button type="button" id="close-summary-btn" class="secondary-btn">Kapat</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Kaydedildi!</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <script>
-    // State management
+    const foodDatabase = [
+      // Kahvaltılıklar & Süt Ürünleri
+      { name: "Yumurta (Haşlanmış)", cal: 155, adet: 50, porsiyon: 100, type: "Kahvaltılık & Süt" }, 
+      { name: "Yumurta (Sahanda)", cal: 210, adet: 50, porsiyon: 100, type: "Kahvaltılık & Süt" }, 
+      { name: "Omlet (Sade)", cal: 154, porsiyon: 120, type: "Kahvaltılık & Süt" },
+      { name: "Menemen", cal: 170, porsiyon: 200, type: "Kahvaltılık & Süt" }, 
+      { name: "Beyaz Peynir (Tam Yağlı)", cal: 310, porsiyon: 60, adet: 30, dilim: 30, type: "Kahvaltılık & Süt" }, 
+      { name: "Beyaz Peynir (Light)", cal: 180, porsiyon: 60, adet: 30, dilim: 30, type: "Kahvaltılık & Süt" },
+      { name: "Kaşar Peyniri", cal: 350, porsiyon: 40, adet: 20, dilim: 20, type: "Kahvaltılık & Süt" }, 
+      { name: "Lor Peyniri", cal: 90, porsiyon: 50, type: "Kahvaltılık & Süt" }, 
+      { name: "Tulum Peyniri", cal: 370, porsiyon: 40, adet: 20, dilim: 20, type: "Kahvaltılık & Süt" },
+      { name: "Siyah Zeytin", cal: 105, adet: 4, porsiyon: 40, type: "Kahvaltılık & Süt" }, 
+      { name: "Yeşil Zeytin", cal: 145, adet: 4, porsiyon: 40, type: "Kahvaltılık & Süt" }, 
+      { name: "Tereyağı", cal: 717, adet: 10, porsiyon: 15, type: "Kahvaltılık & Süt" }, 
+      { name: "Bal", cal: 304, adet: 15, porsiyon: 30, type: "Kahvaltılık & Süt" }, 
+      { name: "Reçel", cal: 278, adet: 15, porsiyon: 30, type: "Kahvaltılık & Süt" }, 
+      { name: "Tahin", cal: 595, adet: 15, porsiyon: 30, type: "Kahvaltılık & Süt" }, 
+      { name: "Pekmez", cal: 290, adet: 15, porsiyon: 30, type: "Kahvaltılık & Süt" },
+      { name: "Ekmek (Beyaz)", cal: 265, adet: 30, porsiyon: 60, dilim: 30, type: "Fırın Ürünleri" }, 
+      { name: "Ekmek (Tam Buğday)", cal: 247, adet: 30, porsiyon: 60, dilim: 30, type: "Fırın Ürünleri" }, 
+      { name: "Ekmek (Çavdar)", cal: 259, adet: 30, porsiyon: 60, dilim: 30, type: "Fırın Ürünleri" },
+      { name: "Yulaf Ezmesi", cal: 389, adet: 10, porsiyon: 40, type: "Kahvaltılık & Süt" }, 
+      { name: "Süt (Tam Yağlı)", cal: 61, porsiyon: 200, type: "Kahvaltılık & Süt" }, 
+      { name: "Süt (Yarım Yağlı)", cal: 47, porsiyon: 200, type: "Kahvaltılık & Süt" },
+      { name: "Süt (Laktozsuz)", cal: 43, porsiyon: 200, type: "Kahvaltılık & Süt" }, 
+      { name: "Yoğurt (Tam Yağlı)", cal: 61, porsiyon: 200, type: "Kahvaltılık & Süt" }, 
+      { name: "Süzme Yoğurt", cal: 112, porsiyon: 150, type: "Kahvaltılık & Süt" },
+      { name: "Meyveli Yoğurt", cal: 95, porsiyon: 150, type: "Kahvaltılık & Süt" },
+      { name: "Kefir", cal: 50, porsiyon: 200, type: "Kahvaltılık & Süt" }, 
+      { name: "Sucuk", cal: 330, adet: 8, porsiyon: 50, dilim: 8, type: "Kahvaltılık & Süt" }, 
+      { name: "Sosis", cal: 300, adet: 30, porsiyon: 90, type: "Kahvaltılık & Süt" }, 
+      { name: "Pastırma", cal: 250, adet: 10, porsiyon: 50, dilim: 10, type: "Kahvaltılık & Süt" },
+      { name: "Simit", cal: 275, adet: 100, porsiyon: 100, type: "Fırın Ürünleri" }, 
+      { name: "Açma", cal: 350, adet: 120, porsiyon: 120, type: "Fırın Ürünleri" }, 
+      { name: "Poğaça (Sade)", cal: 340, adet: 90, porsiyon: 90, type: "Fırın Ürünleri" },
+      { name: "Poğaça (Peynirli)", cal: 330, adet: 90, porsiyon: 90, type: "Fırın Ürünleri" },
+      { name: "Poğaça (Zeytinli)", cal: 350, adet: 90, porsiyon: 90, type: "Fırın Ürünleri" },
+      { name: "Poğaça (Sosisli)", cal: 365, adet: 90, porsiyon: 90, type: "Fırın Ürünleri" },
+      { name: "Poğaça (Kaşarlı)", cal: 360, adet: 90, porsiyon: 90, type: "Fırın Ürünleri" },
+      { name: "Poğaça (Patatesli)", cal: 320, adet: 90, porsiyon: 90, type: "Fırın Ürünleri" },
+      
+      // Sebzeler & Meyveler
+      { name: "Domates", cal: 18, adet: 110, porsiyon: 150, type: "Sebze & Meyve" }, 
+      { name: "Salatalık", cal: 15, adet: 120, porsiyon: 150, type: "Sebze & Meyve" }, 
+      { name: "Biber (Yeşil)", cal: 20, adet: 15, porsiyon: 100, type: "Sebze & Meyve" },
+      { name: "Soğan", cal: 40, adet: 100, porsiyon: 100, type: "Sebze & Meyve" }, 
+      { name: "Patates (Haşlama)", cal: 87, adet: 150, porsiyon: 200, type: "Sebze & Meyve" }, 
+      { name: "Patates Kızartması", cal: 312, porsiyon: 150, type: "Sebze & Meyve" },
+      { name: "Havuç", cal: 41, adet: 80, porsiyon: 100, type: "Sebze & Meyve" }, 
+      { name: "Kabak", cal: 16, adet: 150, porsiyon: 200, type: "Sebze & Meyve" }, 
+      { name: "Patlıcan", cal: 25, adet: 200, porsiyon: 200, type: "Sebze & Meyve" }, 
+      { name: "Brokoli", cal: 34, porsiyon: 150, type: "Sebze & Meyve" },
+      { name: "Karnabahar", cal: 25, porsiyon: 150, type: "Sebze & Meyve" }, 
+      { name: "Mantar", cal: 22, adet: 15, porsiyon: 150, type: "Sebze & Meyve" }, 
+      { name: "Elma", cal: 52, adet: 150, porsiyon: 150, type: "Sebze & Meyve" }, 
+      { name: "Muz", cal: 89, adet: 120, porsiyon: 120, type: "Sebze & Meyve" },
+      { name: "Portakal", cal: 47, adet: 130, porsiyon: 130, type: "Sebze & Meyve" }, 
+      { name: "Mandalina", cal: 53, adet: 80, porsiyon: 160, type: "Sebze & Meyve" }, 
+      { name: "Çilek", cal: 32, adet: 12, porsiyon: 150, type: "Sebze & Meyve" }, 
+      { name: "Karpuz", cal: 30, dilim: 200, porsiyon: 200, type: "Sebze & Meyve" }, 
+      { name: "Kavun", cal: 34, dilim: 200, porsiyon: 200, type: "Sebze & Meyve" }, 
+      { name: "Üzüm", cal: 69, porsiyon: 150, type: "Sebze & Meyve" }, 
+      { name: "Kiraz", cal: 50, adet: 6, porsiyon: 150, type: "Sebze & Meyve" }, 
+      { name: "Şeftali", cal: 39, adet: 150, porsiyon: 150, type: "Sebze & Meyve" },
+      
+      // Çorbalar
+      { name: "Mercimek Çorbası", cal: 56, porsiyon: 250, type: "Çorbalar" }, 
+      { name: "Ezogelin Çorbası", cal: 54, porsiyon: 250, type: "Çorbalar" },
+      { name: "Tarhana Çorbası", cal: 60, porsiyon: 250, type: "Çorbalar" }, 
+      { name: "Tavuk Suyu Çorbası", cal: 45, porsiyon: 250, type: "Çorbalar" }, 
+      { name: "Domates Çorbası", cal: 35, porsiyon: 250, type: "Çorbalar" }, 
+      { name: "Yayla Çorbası", cal: 40, porsiyon: 250, type: "Çorbalar" }, 
+      { name: "Kelle Paça", cal: 135, porsiyon: 250, type: "Çorbalar" }, 
+
+      // Ana Yemekler
+      { name: "Pirinç Pilavı", cal: 130, porsiyon: 150, type: "Ana Yemekler" }, 
+      { name: "Bulgur Pilavı", cal: 83, porsiyon: 150, type: "Ana Yemekler" }, 
+      { name: "Makarna (Sade, Pişmiş)", cal: 158, porsiyon: 150, type: "Ana Yemekler" },
+      { name: "Tavuk Göğsü (Izgara)", cal: 165, adet: 150, porsiyon: 150, type: "Ana Yemekler" }, 
+      { name: "Tavuk But (Fırın)", cal: 210, adet: 120, porsiyon: 200, type: "Ana Yemekler" }, 
+      { name: "Dana Eti (Az Yağlı)", cal: 250, porsiyon: 150, type: "Ana Yemekler" },
+      { name: "Köfte (Izgara)", cal: 200, adet: 30, porsiyon: 120, type: "Ana Yemekler" }, 
+      { name: "Kıyma (Dana)", cal: 332, porsiyon: 100, type: "Ana Yemekler" }, 
+      { name: "Somon Balığı", cal: 208, porsiyon: 200, type: "Ana Yemekler" },
+      { name: "Ton Balığı (Süzülmüş)", cal: 116, adet: 160, porsiyon: 160, type: "Ana Yemekler" }, 
+      { name: "Nohut Yemeği", cal: 164, porsiyon: 200, type: "Ana Yemekler" },
+      { name: "Kuru Fasulye Yemeği", cal: 135, porsiyon: 200, type: "Ana Yemekler" }, 
+      { name: "Zeytinyağlı Taze Fasulye", cal: 48, porsiyon: 200, type: "Ana Yemekler" }, 
+      { name: "Ispanak Yemeği", cal: 45, porsiyon: 200, type: "Ana Yemekler" },
+      { name: "Karnıyarık", cal: 130, adet: 200, porsiyon: 200, type: "Ana Yemekler" }, 
+      { name: "Mantı", cal: 170, porsiyon: 200, type: "Ana Yemekler" }, 
+      { name: "Lahmacun", cal: 200, adet: 150, porsiyon: 150, type: "Ana Yemekler" }, 
+      { name: "Pide (Kıymalı)", cal: 240, porsiyon: 200, type: "Ana Yemekler" }, 
+      { name: "Döner (Et)", cal: 250, porsiyon: 150, type: "Ana Yemekler" }, 
+      { name: "Döner (Tavuk)", cal: 195, porsiyon: 150, type: "Ana Yemekler" },
+      { name: "İskender Kebap", cal: 200, porsiyon: 400, type: "Ana Yemekler" }, 
+      { name: "Adana Kebap", cal: 230, adet: 150, porsiyon: 150, type: "Ana Yemekler" }, 
+      { name: "Tavuk Şiş", cal: 160, adet: 100, porsiyon: 200, type: "Ana Yemekler" }, 
+
+      // Pizzalar
+      { name: "Pizza (Küçük Boy)", cal: 260, dilim: 70, adet: 420, porsiyon: 210, type: "Pizza" }, 
+      { name: "Pizza (Orta Boy)", cal: 260, dilim: 100, adet: 800, porsiyon: 300, type: "Pizza" }, 
+      { name: "Pizza (Büyük Boy)", cal: 260, dilim: 130, adet: 1040, porsiyon: 390, type: "Pizza" }, 
+      { name: "Pizza (İnce Hamur İtalyan)", cal: 220, dilim: 80, porsiyon: 240, type: "Pizza" },
+      
+      // Mezeler & Salatalar
+      { name: "Cacık", cal: 45, porsiyon: 200, type: "Meze & Salata" },
+      { name: "Haydari", cal: 110, porsiyon: 150, type: "Meze & Salata" },
+      { name: "Şakşuka", cal: 130, porsiyon: 150, type: "Meze & Salata" },
+      { name: "Çoban Salata", cal: 30, porsiyon: 200, type: "Meze & Salata" },
+      { name: "Mevsim Salata", cal: 25, porsiyon: 200, type: "Meze & Salata" },
+      { name: "Rus Salatası", cal: 220, porsiyon: 150, type: "Meze & Salata" },
+      { name: "Humus", cal: 160, porsiyon: 150, type: "Meze & Salata" },
+      { name: "Kısır", cal: 180, porsiyon: 150, type: "Meze & Salata" },
+      { name: "Çiğ Köfte (Etsiz)", cal: 180, adet: 25, porsiyon: 150, type: "Meze & Salata" },
+      
+      // Atıştırmalıklar & Kuruyemiş & Tatlı
+      { name: "Ceviz", cal: 654, adet: 5, porsiyon: 30, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Badem", cal: 579, adet: 1.5, porsiyon: 30, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Fındık", cal: 628, adet: 1.5, porsiyon: 30, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Fıstık (Kavrulmuş)", cal: 585, adet: 1, porsiyon: 30, type: "Atıştırmalık & Tatlı" },
+      { name: "Leblebi (Sarı)", cal: 380, porsiyon: 30, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Leblebi (Beyaz)", cal: 360, porsiyon: 30, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Kaju", cal: 553, adet: 2, porsiyon: 30, type: "Atıştırmalık & Tatlı" },
+      { name: "Antep Fıstığı", cal: 560, adet: 1, porsiyon: 30, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Zeytinyağı", cal: 884, adet: 10, porsiyon: 15, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Ayçiçek Yağı", cal: 884, adet: 10, porsiyon: 15, type: "Atıştırmalık & Tatlı" },
+      { name: "Çikolata (Sütlü)", cal: 535, adet: 5, porsiyon: 40, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Çikolata (Bitter)", cal: 546, adet: 5, porsiyon: 40, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Bisküvi (Sade)", cal: 433, adet: 6, porsiyon: 30, type: "Atıştırmalık & Tatlı" },
+      { name: "Kek (Sade)", cal: 365, adet: 60, dilim: 60, porsiyon: 100, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Dondurma", cal: 207, adet: 50, porsiyon: 100, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Baklava", cal: 420, adet: 40, dilim: 40, porsiyon: 120, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Sütlaç", cal: 110, porsiyon: 250, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Kazandibi", cal: 130, porsiyon: 200, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Profiterol", cal: 280, porsiyon: 200, type: "Atıştırmalık & Tatlı" },
+      { name: "Cips (Patates)", cal: 536, porsiyon: 50, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Patlamış Mısır (Sade)", cal: 387, porsiyon: 50, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Kraker (Tuzlu)", cal: 500, porsiyon: 40, type: "Atıştırmalık & Tatlı" },
+      { name: "Protein Bar", cal: 350, adet: 50, porsiyon: 50, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Granola", cal: 470, porsiyon: 50, type: "Atıştırmalık & Tatlı" }, 
+      { name: "Müsli", cal: 350, porsiyon: 50, type: "Atıştırmalık & Tatlı" },
+      
+      // İçecekler
+      { name: "Kola", cal: 42, adet: 330, porsiyon: 250, type: "İçecekler" }, 
+      { name: "Kola (Şekersiz)", cal: 0, adet: 330, porsiyon: 250, type: "İçecekler" }, 
+      { name: "Meyve Suyu", cal: 45, adet: 200, porsiyon: 200, type: "İçecekler" },
+      { name: "Ayran", cal: 37, adet: 200, porsiyon: 200, type: "İçecekler" }, 
+      { name: "Çay (Şekersiz)", cal: 0, porsiyon: 100, type: "İçecekler" }, 
+      { name: "Filtre Kahve (Sade)", cal: 1, porsiyon: 250, type: "İçecekler" },
+      { name: "Türk Kahvesi (Sade)", cal: 2, porsiyon: 70, type: "İçecekler" }, 
+      { name: "Latte", cal: 45, porsiyon: 350, type: "İçecekler" }, 
+      { name: "Mocha", cal: 80, porsiyon: 350, type: "İçecekler" },
+      { name: "Limonata", cal: 40, porsiyon: 250, type: "İçecekler" }, 
+      { name: "Bira", cal: 43, adet: 500, porsiyon: 500, type: "İçecekler" }, 
+      { name: "Şarap (Kırmızı)", cal: 85, porsiyon: 150, type: "İçecekler" },
+      { name: "Maden Suyu (Sade)", cal: 0, adet: 200, porsiyon: 200, type: "İçecekler" }, 
+      { name: "Maden Suyu (Meyveli)", cal: 25, adet: 200, porsiyon: 200, type: "İçecekler" }, 
+      { name: "Soğuk Çay (Ice Tea)", cal: 30, porsiyon: 250, type: "İçecekler" }
+    ];
+
     let state = {
-      profileSetup: false,
-      gender: 'male',
-      age: 25,
-      height: 175,
-      activityLevel: 1.55,
-      targetCalories: 2000,
-      consumedCalories: 0,
-      burnedCalories: 0,
-      meals: [],
-      walks: [],
-      lastDate: null,
-      reminderTime: '18:30',
-      reminderEnabled: false,
-      userWeight: 70
+      profileSetup: false, gender: 'male', age: 25, height: 175, activityLevel: 1.55,
+      targetCalories: 2000, consumedCalories: 0, burnedCalories: 0, meals: [], walks: [],
+      lastDate: null, userWeight: 70
     };
 
-    // Elements
+    const RING_CIRCUMFERENCE = 2 * Math.PI * 96;
+
     const el = {
       ring: document.getElementById('calorie-ring'),
+      ringBurned: document.getElementById('calorie-ring-burned'),
       consumedMain: document.getElementById('calories-consumed-main'),
       goalDisplay: document.getElementById('calories-goal'),
-      burnedDisplay: document.getElementById('calories-burned'),
-      remainingDisplay: document.getElementById('calories-remaining'),
       goalExceededMsg: document.getElementById('goal-exceeded-msg'),
+      
+      themeToggleBtn: document.getElementById('theme-toggle-btn'),
+      profileModalBtn: document.getElementById('profile-modal-btn'),
+      profileModal: document.getElementById('profile-modal'),
+      closeProfileModal: document.getElementById('close-profile-modal'),
+      
+      mealManagerModal: document.getElementById('meal-manager-modal'),
+      managerTitle: document.getElementById('manager-title'),
+      managerCalTotal: document.getElementById('manager-cal-total'),
+      closeManagerModalBtn: document.getElementById('close-manager-modal'),
+      managerList: document.getElementById('manager-list'),
       
       addMealForm: document.getElementById('add-meal-form'),
       mealNameInput: document.getElementById('meal-name'),
       mealAmountInput: document.getElementById('meal-amount'),
       mealUnitSelect: document.getElementById('meal-unit'),
       mealCaloriesInput: document.getElementById('meal-calories'),
-      foodDbList: document.getElementById('food-db'),
+      customDropdown: document.getElementById('custom-dropdown'),
       mealCalcInfo: document.getElementById('meal-calc-info'),
       unitCalDisplay: document.getElementById('unit-cal-display'),
-      mealList: document.getElementById('meal-list'),
-      emptyMeals: document.getElementById('empty-meals'),
       
-      walkMapContainer: document.getElementById('walk-map-container'),
+      cals: {
+        breakfast: document.getElementById('cal-breakfast'),
+        lunch: document.getElementById('cal-lunch'),
+        dinner: document.getElementById('cal-dinner'),
+        snack: document.getElementById('cal-snack')
+      },
+      
+      activityType: document.getElementById('activity-type'),
       startWalkBtn: document.getElementById('start-walk-btn'),
       stopWalkBtn: document.getElementById('stop-walk-btn'),
-      trackTime: document.getElementById('track-time'),
-      trackDist: document.getElementById('track-dist'),
-      trackCal: document.getElementById('track-cal'),
-      walkResultContainer: document.getElementById('walk-result-container'),
-      walkResult: document.getElementById('walk-result'),
-      emptyWalks: document.getElementById('empty-walks'),
+      liveWalkStats: document.getElementById('live-walk-stats'),
+      liveDistance: document.getElementById('live-distance'),
+      liveCal: document.getElementById('live-cal'),
+      gpsStartOverlay: document.getElementById('gps-overlay-start'),
+      gpsStopOverlay: document.getElementById('gps-overlay-stop'),
+      gpsStatsOverlay: document.getElementById('gps-overlay-stats'),
       
-      reminderToggle: document.getElementById('reminder-toggle'),
-      reminderSettings: document.getElementById('reminder-settings'),
+      addToCalendarBtn: document.getElementById('add-to-calendar-btn'),
       reminderTimeInput: document.getElementById('reminder-time'),
-      saveReminderBtn: document.getElementById('save-reminder-btn'),
-      reminderStatus: document.getElementById('reminder-status'),
-      notificationWarning: document.getElementById('notification-warning'),
       
       settingsGoalInput: document.getElementById('settings-goal'),
       saveSettingsBtn: document.getElementById('save-settings-btn'),
-      
+      clearDataBtn: document.getElementById('clear-data-btn'),
       toast: document.getElementById('toast'),
-      navItems: document.querySelectorAll('.nav-item'),
-      tabContents: document.querySelectorAll('.tab-content')
     };
 
-    // Constants
-    const RING_CIRCUMFERENCE = 2 * Math.PI * 104; // r=104
-    el.ring.style.strokeDasharray = RING_CIRCUMFERENCE;
+    let currentMealCategory = 'snack';
+    const catNames = { breakfast: 'Kahvaltı', lunch: 'Öğle Yemeği', dinner: 'Akşam Yemeği', snack: 'Ara Öğün' };
 
-    // Food Database (calories per 100g)
-    const foodDatabase = [
-      { name: "Yumurta (Haşlanmış)", cal: 155 },
-      { name: "Yumurta (Sahanda)", cal: 210 },
-      { name: "Beyaz Peynir (Tam Yağlı)", cal: 310 },
-      { name: "Kaşar Peyniri", cal: 350 },
-      { name: "Siyah Zeytin", cal: 105 },
-      { name: "Yeşil Zeytin", cal: 145 },
-      { name: "Tereyağı", cal: 717 },
-      { name: "Bal", cal: 304 },
-      { name: "Reçel", cal: 278 },
-      { name: "Ekmek (Beyaz)", cal: 265 },
-      { name: "Ekmek (Tam Buğday)", cal: 247 },
-      { name: "Yulaf Ezmesi", cal: 389 },
-      { name: "Süt (Tam Yağlı)", cal: 61 },
-      { name: "Süt (Yarım Yağlı)", cal: 47 },
-      { name: "Yoğurt (Tam Yağlı)", cal: 61 },
-      { name: "Süzme Yoğurt", cal: 112 },
-      { name: "Domates", cal: 18 },
-      { name: "Salatalık", cal: 15 },
-      { name: "Biber (Yeşil)", cal: 20 },
-      { name: "Soğan", cal: 40 },
-      { name: "Patates (Haşlama)", cal: 87 },
-      { name: "Patates Kızartması", cal: 312 },
-      { name: "Pirinç Pilavı", cal: 130 },
-      { name: "Bulgur Pilavı", cal: 83 },
-      { name: "Makarna (Sade, Pişmiş)", cal: 158 },
-      { name: "Tavuk Göğsü (Izgara)", cal: 165 },
-      { name: "Tavuk But (Fırın)", cal: 210 },
-      { name: "Dana Eti (Az Yağlı)", cal: 250 },
-      { name: "Köfte (Izgara)", cal: 200 },
-      { name: "Kıyma (Dana)", cal: 332 },
-      { name: "Somon Balığı", cal: 208 },
-      { name: "Ton Balığı (Süzülmüş)", cal: 116 },
-      { name: "Mercimek Çorbası", cal: 56 },
-      { name: "Ezogelin Çorbası", cal: 54 },
-      { name: "Nohut Yemeği", cal: 164 },
-      { name: "Kuru Fasulye Yemeği", cal: 135 },
-      { name: "Zeytinyağlı Taze Fasulye", cal: 48 },
-      { name: "Ispanak Yemeği", cal: 45 },
-      { name: "Elma", cal: 52 },
-      { name: "Muz", cal: 89 },
-      { name: "Portakal", cal: 47 },
-      { name: "Mandalina", cal: 53 },
-      { name: "Çilek", cal: 32 },
-      { name: "Karpuz", cal: 30 },
-      { name: "Kavun", cal: 34 },
-      { name: "Üzüm", cal: 69 },
-      { name: "Ceviz", cal: 654 },
-      { name: "Badem", cal: 579 },
-      { name: "Fındık", cal: 628 },
-      { name: "Fıstık (Kavrulmuş)", cal: 585 },
-      { name: "Leblebi (Sarı)", cal: 380 },
-      { name: "Zeytinyağı", cal: 884 },
-      { name: "Ayçiçek Yağı", cal: 884 },
-      { name: "Çikolata (Sütlü)", cal: 535 },
-      { name: "Çikolata (Bitter)", cal: 546 },
-      { name: "Bisküvi (Sade)", cal: 433 },
-      { name: "Kek (Sade)", cal: 365 },
-      { name: "Dondurma", cal: 207 },
-      { name: "Kola", cal: 42 },
-      { name: "Meyve Suyu", cal: 45 },
-      { name: "Ayran", cal: 37 }
-    ];
-
-    // Initialization
     function init() {
-      populateFoodList();
+      el.ring.style.strokeDasharray = RING_CIRCUMFERENCE;
+      el.ring.style.strokeDashoffset = RING_CIRCUMFERENCE;
+      el.ringBurned.style.strokeDasharray = RING_CIRCUMFERENCE;
+      el.ringBurned.style.strokeDashoffset = RING_CIRCUMFERENCE;
+      
       loadState();
       checkOnboarding();
       checkMidnightReset();
-      updateUI();
+      setTimeout(updateUI, 50);
       setupEventListeners();
-      checkNotificationPermissions();
-      setupNotificationCheck();
+      initMapPlaceholder();
     }
-
-    // GPS Tracking variables
-    let watchId = null;
-    let walkStartTime = null;
-    let walkPoints = [];
-    let walkMapObj = null;
-    let walkPolyline = null;
-    let totalDistanceKm = 0;
-    let currentWalkCal = 0;
-    let trackInterval = null;
+    
+    
+    let map, marker, pathLine;
+    function initMapPlaceholder() {
+      if (!map) {
+        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([41.0082, 28.9784], 12);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+        // Let it be a dark beautiful background map of Istanbul by default
+      }
+    }
 
     function checkOnboarding() {
       if (!state.profileSetup) {
@@ -879,46 +805,10 @@
       }
     }
 
-    document.getElementById('onboarding-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      state.gender = document.getElementById('ob-gender').value;
-      state.age = parseInt(document.getElementById('ob-age').value, 10);
-      state.userWeight = parseFloat(document.getElementById('ob-weight').value);
-      state.height = parseInt(document.getElementById('ob-height').value, 10);
-      state.activityLevel = parseFloat(document.getElementById('ob-activity').value);
-      
-      // Mifflin-St Jeor Formula
-      let bmr = 10 * state.userWeight + 6.25 * state.height - 5 * state.age;
-      if (state.gender === 'male') {
-        bmr += 5;
-      } else {
-        bmr -= 161;
-      }
-      
-      state.targetCalories = Math.round(bmr * state.activityLevel);
-      state.profileSetup = true;
-      el.settingsGoalInput.value = state.targetCalories;
-      
-      saveState();
-      document.getElementById('onboarding').classList.add('hidden');
-      showToast('Profil oluşturuldu!');
-    });
-
     function loadState() {
       const saved = localStorage.getItem('antigravity_state');
-      if (saved) {
-        state = { ...state, ...JSON.parse(saved) };
-      }
-      // Populate inputs with saved state
+      if (saved) state = { ...state, ...JSON.parse(saved) };
       el.settingsGoalInput.value = state.targetCalories;
-      el.reminderTimeInput.value = state.reminderTime;
-      el.reminderToggle.checked = state.reminderEnabled;
-      toggleReminderSettings(state.reminderEnabled);
-    }
-
-    function populateFoodList() {
-      foodDatabase.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
-      el.foodDbList.innerHTML = foodDatabase.map(f => `<option value="${f.name}">`).join('');
     }
 
     function saveState() {
@@ -929,243 +819,350 @@
     function checkMidnightReset() {
       const today = new Date().toDateString();
       if (state.lastDate !== today) {
-        state.consumedCalories = 0;
-        state.burnedCalories = 0;
-        state.meals = [];
-        state.walks = [];
+        if (state.lastDate !== null) {
+          state.consumedCalories = 0;
+          state.burnedCalories = 0;
+          state.meals = [];
+          state.walks = [];
+        }
         state.lastDate = today;
         saveState();
       }
     }
 
     function updateUI() {
-      // Net logic: Remaining = Target + Burned - Consumed
       const netTarget = state.targetCalories + state.burnedCalories;
       let remaining = netTarget - state.consumedCalories;
       
-      // Update numbers
       el.consumedMain.textContent = state.consumedCalories;
       el.goalDisplay.textContent = state.targetCalories;
-      el.burnedDisplay.textContent = state.burnedCalories;
-      el.remainingDisplay.textContent = remaining < 0 ? 0 : remaining;
-      
-      // Warning message
-      if (remaining < 0) {
-        el.goalExceededMsg.style.display = 'block';
-      } else {
-        el.goalExceededMsg.style.display = 'none';
-      }
+      el.goalExceededMsg.style.display = remaining < 0 ? 'block' : 'none';
 
-      // Update ring
-      let percent = state.consumedCalories / netTarget;
-      if (percent > 1) percent = 1;
-      if (isNaN(percent) || netTarget === 0) percent = 0;
+      let consumedPercent = state.consumedCalories / netTarget;
+      if (consumedPercent > 1) consumedPercent = 1;
+      if (isNaN(consumedPercent) || netTarget === 0) consumedPercent = 0;
       
-      const offset = RING_CIRCUMFERENCE - (percent * RING_CIRCUMFERENCE);
-      el.ring.style.strokeDashoffset = offset;
+      let netConsumed = state.consumedCalories - state.burnedCalories;
+      if (netConsumed < 0) netConsumed = 0;
+      
+      let netPercent = netConsumed / netTarget;
+      if (netPercent > 1) netPercent = 1;
+      if (isNaN(netPercent) || netTarget === 0) netPercent = 0;
 
-      // Update meal list
-      el.mealList.innerHTML = '';
-      if (state.meals.length === 0) {
-        el.emptyMeals.style.display = 'block';
-      } else {
-        el.emptyMeals.style.display = 'none';
-        state.meals.forEach(meal => {
-          const li = document.createElement('li');
-          li.className = 'meal-item';
-          li.innerHTML = `
-            <div class="meal-info">
-              <div class="meal-name">${escapeHTML(meal.name)}</div>
-              <div class="meal-cal">${meal.calories} kcal</div>
-            </div>
-            <button class="delete-btn" onclick="deleteMeal('${meal.id}')">&times;</button>
-          `;
-          el.mealList.appendChild(li);
-        });
-      }
+      const offsetConsumed = RING_CIRCUMFERENCE - (consumedPercent * RING_CIRCUMFERENCE);
+      const offsetNet = RING_CIRCUMFERENCE - (netPercent * RING_CIRCUMFERENCE);
 
-      // Update Walk empty state
-      if (state.walks && state.walks.length > 0) {
-        el.emptyWalks.style.display = 'none';
-      } else {
-        el.emptyWalks.style.display = 'block';
+      el.ringBurned.style.strokeDashoffset = offsetConsumed;
+      el.ring.style.strokeDashoffset = offsetNet;
+
+      let categoryTotals = { breakfast: 0, lunch: 0, dinner: 0, snack: 0 };
+      state.meals.forEach(meal => {
+        const cat = meal.category || 'snack';
+        categoryTotals[cat] += meal.calories;
+      });
+
+      Object.keys(categoryTotals).forEach(cat => {
+        if(el.cals[cat]) el.cals[cat].textContent = categoryTotals[cat];
+      });
+
+      el.emptyWalks.style.display = (state.walks && state.walks.length > 0) ? 'none' : 'block';
+    }
+
+    function openManagerModal(cat) {
+      currentMealCategory = cat;
+      el.managerTitle.textContent = catNames[cat];
+      
+      let total = 0;
+      el.managerList.innerHTML = '';
+      
+      const catMeals = state.meals.filter(m => (m.category || 'snack') === cat);
+      catMeals.forEach(meal => {
+        total += meal.calories;
+        const li = document.createElement('li');
+        li.className = 'meal-item';
+        li.innerHTML = `
+          <div class="meal-info">
+            <div class="meal-name">${escapeHTML(meal.name)}</div>
+            <div class="meal-cal">${meal.calories} kcal</div>
+          </div>
+          <button class="delete-btn" onclick="deleteMeal('${meal.id}', '${cat}')">&times;</button>
+        `;
+        el.managerList.appendChild(li);
+      });
+      
+      if(catMeals.length === 0) {
+         el.managerList.innerHTML = '<li class="empty-state" style="padding: 10px;">Bu öğün için henüz kayıt yok.</li>';
       }
       
-      updateReminderStatusText();
+      el.managerCalTotal.textContent = total + ' kcal';
+      el.mealManagerModal.classList.remove('hidden');
+    }
+
+    window.deleteMeal = function(id, cat) {
+      const idx = state.meals.findIndex(m => m.id === id);
+      if (idx !== -1) {
+        state.consumedCalories -= state.meals[idx].calories;
+        if(state.consumedCalories < 0) state.consumedCalories = 0;
+        state.meals.splice(idx, 1);
+        saveState();
+        openManagerModal(cat); // refresh list
+      }
+    };
+
+    function showToast(msg) {
+      el.toast.textContent = msg;
+      el.toast.classList.add('show');
+      setTimeout(() => el.toast.classList.remove('show'), 3000);
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
     }
 
     function setupEventListeners() {
-      // Navigation
-      el.navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-          e.preventDefault();
-          const targetTabId = item.getAttribute('data-tab');
-          
-          el.navItems.forEach(nav => nav.classList.remove('active'));
-          item.classList.add('active');
+      // Theme Toggle Logic
+      if (!localStorage.getItem('v9_theme_reset')) {
+        localStorage.setItem('antigravity_theme', 'light');
+        localStorage.setItem('v9_theme_reset', 'true');
+      }
+      let currentTheme = localStorage.getItem('antigravity_theme') || 'light';
+      document.body.setAttribute('data-theme', currentTheme);
+      const svg_moon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+      const svg_sun = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+      const themeIconContainer = document.getElementById('theme-icon-container');
+      themeIconContainer.innerHTML = currentTheme === 'light' ? svg_moon : svg_sun;
 
-          el.tabContents.forEach(tab => tab.classList.remove('active'));
-          document.getElementById(targetTabId).classList.add('active');
-        });
+      el.themeToggleBtn.addEventListener('click', () => {
+        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', currentTheme);
+        themeIconContainer.innerHTML = currentTheme === 'light' ? svg_moon : svg_sun;
+        localStorage.setItem('antigravity_theme', currentTheme);
       });
 
-      // Meal auto calculation
+      // Profile Modal
+      el.profileModalBtn.addEventListener('click', () => el.profileModal.classList.remove('hidden'));
+      el.closeProfileModal.addEventListener('click', () => el.profileModal.classList.add('hidden'));
+
+      // Dashboard Meal Buttons
+      document.querySelectorAll('.meal-dash-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          openManagerModal(btn.getAttribute('data-category'));
+        });
+      });
+      el.closeManagerModalBtn.addEventListener('click', () => {
+        el.mealManagerModal.classList.add('hidden');
+      });
+
+      // Meal Calc and Dropdown
+      const renderDropdown = (query) => {
+        el.customDropdown.innerHTML = '';
+        if (!query) { el.customDropdown.style.display = 'none'; return; }
+        const q = query.toLowerCase();
+        const results = foodDatabase.filter(f => f.name.toLowerCase().includes(q));
+        if (results.length === 0) { el.customDropdown.style.display = 'none'; return; }
+
+        const grouped = {};
+        results.forEach(f => {
+          if (!grouped[f.type]) grouped[f.type] = [];
+          grouped[f.type].push(f);
+        });
+
+        Object.keys(grouped).forEach(type => {
+          const title = document.createElement('div');
+          title.className = 'dropdown-group-title'; title.textContent = type;
+          el.customDropdown.appendChild(title);
+          grouped[type].forEach(f => {
+            const item = document.createElement('div');
+            item.className = 'dropdown-item'; item.textContent = f.name;
+            item.addEventListener('click', () => {
+              el.mealNameInput.value = f.name;
+              el.customDropdown.style.display = 'none';
+              
+              // Smart Unit Selection
+              let unitToSelect = '1'; // Default Gram/ml
+              if (f.type === 'İçecekler') unitToSelect = '200'; // Su Bardağı
+              else if (f.type === 'Meyveler') unitToSelect = '1'; // Adet (we use value 1 for Adet but select by text below)
+              else if (f.type === 'Pizza' || f.type === 'Hamur İşi' || f.name.includes('Börek') || f.name.includes('Ekmek')) unitToSelect = 'Dilim';
+              else if (f.type === 'Çorba' || f.type === 'Salata' || f.type === 'Mezeler' || f.type === 'Ana Yemekler') unitToSelect = '150'; // Porsiyon
+              else if (f.adet) unitToSelect = 'Adet';
+              
+              if (unitToSelect === 'Adet' || unitToSelect === 'Dilim') {
+                for(let opt of el.mealUnitSelect.options) {
+                  if(opt.text === unitToSelect) { opt.selected = true; break; }
+                }
+                el.mealAmountInput.value = 1;
+              } else {
+                for(let opt of el.mealUnitSelect.options) {
+                  if(opt.value === unitToSelect) { opt.selected = true; break; }
+                }
+                if (unitToSelect === '1') el.mealAmountInput.value = 100;
+                else el.mealAmountInput.value = 1;
+              }
+              
+              calculateMealCals();
+            });
+            el.customDropdown.appendChild(item);
+          });
+        });
+        el.customDropdown.style.display = 'block';
+      };
+
+      el.mealNameInput.addEventListener('input', (e) => {
+        renderDropdown(e.target.value);
+        calculateMealCals();
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!el.customDropdown.contains(e.target) && e.target !== el.mealNameInput) {
+          el.customDropdown.style.display = 'none';
+        }
+      });
+
       const calculateMealCals = () => {
         const name = el.mealNameInput.value.trim();
         const amount = parseFloat(el.mealAmountInput.value);
-        const unitMultiplier = parseFloat(el.mealUnitSelect.value);
+        const unitName = el.mealUnitSelect.options[el.mealUnitSelect.selectedIndex].text;
         const food = foodDatabase.find(f => f.name === name);
         
         if (food) {
           el.mealCalcInfo.style.display = 'block';
-          el.unitCalDisplay.textContent = food.cal;
           if (amount > 0) {
-            const totalWeight = amount * unitMultiplier;
-            el.mealCaloriesInput.value = Math.round((food.cal * totalWeight) / 100);
+            let totalWeight = amount;
+            if (unitName === 'Gram / ml') totalWeight = amount;
+            else if (unitName === 'Su Bardağı') totalWeight = amount * 200;
+            else if (unitName === 'Çay Bardağı') totalWeight = amount * 100;
+            else if (unitName === 'Porsiyon') totalWeight = amount * (food.porsiyon || 150);
+            else if (unitName === 'Adet') totalWeight = amount * (food.adet || 100);
+            else if (unitName === 'Dilim') totalWeight = amount * (food.dilim || food.adet || 100);
+            
+            const calculatedCal = Math.round((food.cal * totalWeight) / 100);
+            el.mealCaloriesInput.value = calculatedCal;
+            
+            if (unitName === 'Adet') {
+              const perAdet = Math.round((food.cal * (food.adet || 100)) / 100);
+              el.unitCalDisplay.innerHTML = `1 adeti (~${food.adet || 100}g) <b>${perAdet}</b>`;
+            } else if (unitName === 'Dilim') {
+              const perDilim = Math.round((food.cal * (food.dilim || food.adet || 100)) / 100);
+              el.unitCalDisplay.innerHTML = `1 dilimi (~${food.dilim || food.adet || 100}g) <b>${perDilim}</b>`;
+            } else if (unitName === 'Porsiyon') {
+              const perPor = Math.round((food.cal * (food.porsiyon || 150)) / 100);
+              el.unitCalDisplay.innerHTML = `1 porsiyonu (~${food.porsiyon || 150}g) <b>${perPor}</b>`;
+            } else {
+              el.unitCalDisplay.innerHTML = `100 gramı <b>${food.cal}</b>`;
+            }
+          } else {
+            el.unitCalDisplay.innerHTML = `100 gramı <b>${food.cal}</b>`;
+            el.mealCaloriesInput.value = '';
           }
         } else {
           el.mealCalcInfo.style.display = 'none';
         }
       };
 
-      el.mealNameInput.addEventListener('input', calculateMealCals);
       el.mealAmountInput.addEventListener('input', calculateMealCals);
       el.mealUnitSelect.addEventListener('change', calculateMealCals);
 
-      // Add meal
       el.addMealForm.addEventListener('submit', (e) => {
         e.preventDefault();
         let name = el.mealNameInput.value.trim();
-        const amount = el.mealAmountInput.value.trim();
+        const amount = parseFloat(el.mealAmountInput.value.trim());
         const cal = parseInt(el.mealCaloriesInput.value, 10);
         
         if (name && cal > 0) {
           if (amount) {
-            const unitMultiplier = parseFloat(el.mealUnitSelect.value);
             const unitText = el.mealUnitSelect.options[el.mealUnitSelect.selectedIndex].text;
-            const unitSuffix = unitMultiplier === 1 ? 'g' : ` ${unitText}`;
+            const unitSuffix = unitText === 'Gram / ml' ? 'g' : (unitText === 'Adet' ? ' adet' : ` ${unitText}`);
             name += ` (${amount}${unitSuffix})`;
           }
-          state.meals.unshift({
-            id: Date.now().toString(),
-            name,
-            calories: cal,
-            time: new Date().toISOString()
+          state.meals.push({
+            id: Date.now().toString(), name, calories: cal, category: currentMealCategory, time: new Date().toISOString()
           });
           state.consumedCalories += cal;
           
           pulseRing();
-          
-          el.mealNameInput.value = '';
-          el.mealAmountInput.value = '';
-          el.mealCaloriesInput.value = '';
+          el.mealNameInput.value = ''; el.mealAmountInput.value = ''; el.mealCaloriesInput.value = '';
           el.mealCalcInfo.style.display = 'none';
           saveState();
           showToast('Öğün eklendi');
+          openManagerModal(currentMealCategory);
         }
       });
 
-      // Walk map logic
-      el.startWalkBtn.addEventListener('click', () => {
-        if (!("geolocation" in navigator)) {
-          showToast("Tarayıcınız GPS desteklemiyor.");
-          return;
-        }
-        
-        el.walkMapContainer.style.display = 'block';
-        el.startWalkBtn.style.display = 'none';
-        el.stopWalkBtn.style.display = 'block';
-        
-        if (!walkMapObj) {
-          walkMapObj = L.map('walk-map').setView([41.0082, 28.9784], 15);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-          }).addTo(walkMapObj);
-          walkPolyline = L.polyline([], {color: 'var(--accent-color)', weight: 5}).addTo(walkMapObj);
-        }
-        setTimeout(() => walkMapObj.invalidateSize(), 100);
+      function pulseRing() {
+        el.ring.parentElement.style.transform = 'scale(1.05)';
+        setTimeout(() => el.ring.parentElement.style.transform = 'scale(1)', 200);
+      }
 
-        walkPoints = [];
-        totalDistanceKm = 0;
-        currentWalkCal = 0;
-        walkStartTime = new Date();
-        walkPolyline.setLatLngs([]);
+      // Add to Calendar Integration
+      el.addToCalendarBtn.addEventListener('click', () => {
+        const time = el.reminderTimeInput.value;
+        if(!time) return;
+        const [hours, minutes] = time.split(':');
         
-        el.trackTime.textContent = "00:00";
-        el.trackDist.textContent = "0.00";
-        el.trackCal.textContent = "0";
+        const now = new Date();
+        now.setHours(hours, minutes, 0);
+        
+        const formatICSDate = (date) => {
+          return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
+        
+        const dtstart = formatICSDate(now);
+        const dtend = formatICSDate(new Date(now.getTime() + 60 * 60 * 1000));
+        
+        const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//METRA//Spor Asistanı//TR
+BEGIN:VEVENT
+UID:${Date.now()}@metra.app
+DTSTAMP:${formatICSDate(new Date())}
+DTSTART:${dtstart}
+DTEND:${dtend}
+RRULE:FREQ=DAILY
+SUMMARY:🏃‍♂️ METRA Antrenman Vakti!
+DESCRIPTION:Günlük egzersiz ve su hedeflerini tamamlamayı unutma.
+BEGIN:VALARM
+TRIGGER:-PT0M
+ACTION:DISPLAY
+DESCRIPTION:Reminder
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
 
-        trackInterval = setInterval(() => {
-          if (!walkStartTime) return;
-          const diffSecs = Math.floor((new Date() - walkStartTime) / 1000);
-          const mins = Math.floor(diffSecs / 60);
-          const secs = diffSecs % 60;
-          el.trackTime.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-          
-          const diffHours = diffSecs / 3600;
-          const speedKmh = diffHours > 0 ? (totalDistanceKm / diffHours) : 0;
-          
-          let met = 2.8;
-          if (speedKmh > 6) met = 4.3;
-          else if (speedKmh > 4) met = 3.5;
-          
-          currentWalkCal = Math.round(met * state.userWeight * diffHours);
-          el.trackCal.textContent = currentWalkCal;
-        }, 1000);
-
-        watchId = navigator.geolocation.watchPosition(
-          (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const newPoint = L.latLng(lat, lng);
-            
-            if (walkPoints.length > 0) {
-              const lastPoint = walkPoints[walkPoints.length - 1];
-              totalDistanceKm += (lastPoint.distanceTo(newPoint) / 1000);
-            }
-            
-            walkPoints.push(newPoint);
-            walkPolyline.addLatLng(newPoint);
-            walkMapObj.panTo(newPoint);
-            el.trackDist.textContent = totalDistanceKm.toFixed(2);
-          },
-          (err) => {
-            console.error(err);
-            showToast("Konum alınamadı. İzin verildiğine emin olun.");
-          },
-          { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
-        );
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'metra_antrenman.ics';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('Takvim dosyası indirildi!');
       });
 
-      el.stopWalkBtn.addEventListener('click', () => {
-        if (watchId) navigator.geolocation.clearWatch(watchId);
-        clearInterval(trackInterval);
+      // Settings and Profile
+      document.getElementById('onboarding-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        state.gender = document.getElementById('ob-gender').value;
+        state.age = parseInt(document.getElementById('ob-age').value, 10);
+        state.height = parseInt(document.getElementById('ob-height').value, 10);
+        state.userWeight = parseFloat(document.getElementById('ob-weight').value);
+        state.activityLevel = parseFloat(document.getElementById('ob-activity').value);
         
-        el.startWalkBtn.style.display = 'block';
-        el.stopWalkBtn.style.display = 'none';
-        el.walkMapContainer.style.display = 'none';
+        let bmr = state.gender === 'male' 
+          ? (10 * state.userWeight) + (6.25 * state.height) - (5 * state.age) + 5
+          : (10 * state.userWeight) + (6.25 * state.height) - (5 * state.age) - 161;
         
-        if (currentWalkCal > 0) {
-          state.burnedCalories += currentWalkCal;
-          state.walks = state.walks || [];
-          state.walks.push({
-            id: Date.now().toString(),
-            calories: currentWalkCal,
-            distance: totalDistanceKm.toFixed(2),
-            time: new Date().toISOString()
-          });
-          
-          pulseRing();
-          saveState();
-          showToast('Yürüyüş kaydedildi 💪');
-          
-          el.walkResult.textContent = currentWalkCal;
-          el.walkResultContainer.style.display = 'block';
-          el.emptyWalks.style.display = 'none';
-        }
+        state.targetCalories = Math.round(bmr * state.activityLevel);
+        state.profileSetup = true;
+        el.settingsGoalInput.value = state.targetCalories;
+        
+        saveState();
+        document.getElementById('onboarding').classList.add('hidden');
+        showToast('Profil oluşturuldu!');
       });
 
-      // Settings
       el.saveSettingsBtn.addEventListener('click', () => {
         const target = parseInt(el.settingsGoalInput.value, 10);
         if (target >= 500) {
@@ -1174,147 +1171,126 @@
           showToast('Hedef güncellendi');
         }
       });
-
-      // Reminders
-      el.reminderToggle.addEventListener('change', (e) => {
-        const isEnabled = e.target.checked;
-        state.reminderEnabled = isEnabled;
-        toggleReminderSettings(isEnabled);
-        
-        if (isEnabled) {
-          requestNotificationPermission();
+      
+      el.clearDataBtn.addEventListener('click', () => {
+        if(confirm('Tüm verilerin silinecek. Emin misin?')) {
+          localStorage.removeItem('antigravity_state');
+          location.reload();
         }
-        saveState();
       });
 
-      el.saveReminderBtn.addEventListener('click', () => {
-        state.reminderTime = el.reminderTimeInput.value;
-        saveState();
-        showToast('Hatırlatıcı saati kaydedildi');
+      // Walk / GPS Logic
+      
+      let walkInterval, watchId;
+      let isWalking = false;
+      let walkDistance = 0;
+      let walkSeconds = 0;
+      let walkPath = [];
+      
+      const activityMets = { walk: 3.5, run: 8.0, bike: 6.0 };
+
+      document.getElementById('close-summary-btn').addEventListener('click', () => {
+        document.getElementById('activity-summary-modal').classList.add('hidden');
       });
-    }
+      document.getElementById('share-summary-btn').addEventListener('click', () => {
+        const card = document.getElementById('summary-card');
+        html2canvas(card, {backgroundColor: null}).then(canvas => {
+          const link = document.createElement('a');
+          link.download = 'metra_egzersiz.png';
+          link.href = canvas.toDataURL();
+          link.click();
+        });
+      });
+      
+      el.startWalkBtn.addEventListener('click', () => {
+        if (isWalking) return;
+        if (!navigator.geolocation) { alert('Tarayıcın GPS desteklemiyor.'); return; }
+        
+        isWalking = true;
+        walkDistance = 0;
+        walkSeconds = 0;
+        walkPath = [];
+        
+        el.liveDistance.textContent = '0.00';
+        el.liveCal.textContent = '0';
+        el.gpsStatsOverlay.style.display = 'block';
+        el.gpsStartOverlay.style.display = 'none';
+        el.gpsStopOverlay.style.display = 'block';
+        el.activityType.disabled = true;
+        
+        // Map is already initialized by initMapPlaceholder
+        
+        if (pathLine) map.removeLayer(pathLine);
+        if (marker) map.removeLayer(marker);
+        
+        pathLine = L.polyline([], {color: '#00F5C3', weight: 4}).addTo(map);
+        marker = L.circleMarker([0,0], {radius: 6, color: '#FF4D4D', fillColor: '#FF4D4D', fillOpacity: 1}).addTo(map);
 
-    function deleteMeal(id) {
-      const idx = state.meals.findIndex(m => m.id === id);
-      if (idx !== -1) {
-        state.consumedCalories -= state.meals[idx].calories;
-        if(state.consumedCalories < 0) state.consumedCalories = 0; // safety check
-        state.meals.splice(idx, 1);
-        saveState();
-      }
-    }
-    
-    // Attach to global for inline onclick
-    window.deleteMeal = deleteMeal;
+        navigator.geolocation.getCurrentPosition(pos => {
+          const latlng = [pos.coords.latitude, pos.coords.longitude];
+          map.setView(latlng, 17);
+          marker.setLatLng(latlng);
+          walkPath.push(latlng);
+          pathLine.addLatLng(latlng);
+        });
 
-    function toggleReminderSettings(enabled) {
-      el.reminderSettings.style.opacity = enabled ? '1' : '0.5';
-      el.reminderSettings.style.pointerEvents = enabled ? 'auto' : 'none';
-    }
-
-    function updateReminderStatusText() {
-      if (state.reminderEnabled && state.reminderTime) {
-        el.reminderStatus.textContent = `Sonraki yürüyüş hatırlatıcısı: ${state.reminderTime}`;
-      } else {
-        el.reminderStatus.textContent = '';
-      }
-    }
-
-    function pulseRing() {
-      el.ring.parentElement.parentElement.classList.remove('ring-pulse');
-      // Trigger reflow
-      void el.ring.offsetWidth;
-      el.ring.parentElement.parentElement.classList.add('ring-pulse');
-    }
-
-    function showToast(message) {
-      el.toast.textContent = message;
-      el.toast.classList.add('show');
-      setTimeout(() => {
-        el.toast.classList.remove('show');
-      }, 3000);
-    }
-
-    function escapeHTML(str) {
-      return str.replace(/[&<>'"]/g, 
-        tag => ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          "'": '&#39;',
-          '"': '&quot;'
-        }[tag] || tag)
-      );
-    }
-
-    // Notifications
-    function checkNotificationPermissions() {
-      if (!("Notification" in window)) {
-        el.notificationWarning.textContent = "Tarayıcınız bildirimleri desteklemiyor.";
-        if(state.reminderEnabled) el.notificationWarning.style.display = 'block';
-        return;
-      }
-
-      if (Notification.permission === "denied" && state.reminderEnabled) {
-        el.notificationWarning.style.display = 'block';
-      } else {
-        el.notificationWarning.style.display = 'none';
-      }
-    }
-
-    function requestNotificationPermission() {
-      if ("Notification" in window && Notification.permission !== "granted") {
-        Notification.requestPermission().then(permission => {
-          if (permission === "granted") {
-            el.notificationWarning.style.display = 'none';
-            showToast('Bildirimlere izin verildi');
-          } else {
-            el.notificationWarning.style.display = 'block';
-            state.reminderEnabled = false;
-            el.reminderToggle.checked = false;
-            toggleReminderSettings(false);
-            saveState();
+        watchId = navigator.geolocation.watchPosition(pos => {
+          const newLatLng = [pos.coords.latitude, pos.coords.longitude];
+          if (walkPath.length > 0) {
+            const prev = walkPath[walkPath.length - 1];
+            walkDistance += map.distance(prev, newLatLng) / 1000;
           }
-        });
-      }
-    }
+          walkPath.push(newLatLng);
+          pathLine.addLatLng(newLatLng);
+          marker.setLatLng(newLatLng);
+          map.panTo(newLatLng);
+          
+          el.liveDistance.textContent = walkDistance.toFixed(2);
+        }, err => console.error(err), { enableHighAccuracy: true });
 
-    function setupNotificationCheck() {
-      // Check every minute if it's time for the notification
-      setInterval(() => {
-        if (!state.reminderEnabled || !state.reminderTime) return;
+        walkInterval = setInterval(() => {
+          walkSeconds++;
+          const type = el.activityType.value;
+          const met = activityMets[type] || 3.5;
+          const hours = walkSeconds / 3600;
+          const calBurned = Math.round(met * state.userWeight * hours);
+          el.liveCal.textContent = calBurned;
+        }, 1000);
+      });
+
+      el.stopWalkBtn.addEventListener('click', () => {
+        if (!isWalking) return;
+        isWalking = false;
         
-        const now = new Date();
-        const currentHours = String(now.getHours()).padStart(2, '0');
-        const currentMinutes = String(now.getMinutes()).padStart(2, '0');
-        const currentTime = `${currentHours}:${currentMinutes}`;
+        navigator.geolocation.clearWatch(watchId);
+        clearInterval(walkInterval);
         
-        // Prevent multiple notifications in the same minute
-        const lastNotified = localStorage.getItem('antigravity_last_notified');
-        const todayStr = now.toDateString() + '_' + currentTime;
+        el.gpsStartOverlay.style.display = 'block';
+        el.gpsStopOverlay.style.display = 'none';
+        el.gpsStatsOverlay.style.display = 'none';
+        el.activityType.disabled = false;
         
-        if (currentTime === state.reminderTime && lastNotified !== todayStr) {
-          sendNotification();
-          localStorage.setItem('antigravity_last_notified', todayStr);
+        const type = el.activityType.value;
+        const met = activityMets[type] || 3.5;
+        const currentWalkCal = Math.round(met * state.userWeight * (walkSeconds / 3600));
+        
+        if (currentWalkCal > 0 || walkDistance > 0) {
+          state.burnedCalories += currentWalkCal;
+          const typeNames = { walk: '🏃‍♂️ Yürüyüş', run: '🏃‍♀️ Koşu', bike: '🚴 Bisiklet' };
+          const currentActivityName = typeNames[type] || 'Aktivite';
+          
+          state.walks.push({
+            id: Date.now().toString(), name: currentActivityName, calories: currentWalkCal, distance: walkDistance.toFixed(2), time: new Date().toISOString()
+          });
+          
+          pulseRing();
+          saveState();
+          showToast('Egzersiz kaydedildi 💪');
         }
-        
-        // Check midnight reset here as well
-        checkMidnightReset();
-      }, 60000); // Check every minute
+      });
     }
 
-    function sendNotification() {
-      if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("Yürüme vakti! 🚶", {
-          body: "Antigravity ile hareket et.",
-          // A simple dot as icon placeholder to match the mint accent if possible
-          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%2300F5C3"/></svg>'
-        });
-      }
-    }
-
-    // Boot
-    init();
+    window.onload = init;
   </script>
 </body>
 </html>
